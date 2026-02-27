@@ -8,57 +8,53 @@ Suppose you have:
 1.  Custom Roles already created in Spacelift (e.g. "reader" and "maintainer" roles for both Production and Non-Production).
 2.  Okta groups synced to your Identity Provider.
 
-You can declare a single `apps` map for a single team describing your organizational layout. This module unfolds the nested dictionary into `spacelift_space`, `spacelift_idp_group_mapping`, and recursive `spacelift_role_attachment` resources. By checking if the environment space name is `prod`, the correct permissions cascade naturally without having to specify verbose rules for every namespace. Environment names are restricted to `dev` or `prod`.
+You can declare a single `apps` map for a single team describing your organizational layout. This module unfolds the nested dictionary into `spacelift_space`, `spacelift_idp_group_mapping`, and recursive `spacelift_role_attachment` resources. By providing `okta_groups` in the standard nomenclature (`Spacelift_<app>_<team>_<permission_level>_<env>`), this module extracts the target space, role permissions, and environments recursively without requiring inline verbose bindings.
+
+Environment names are restricted to `dev`, `test`, or `prod`. Note that `T` resolves to `test` if it exists, otherwise defaulting to `dev`.
 
 ## Example Usage
 
 ```hcl
+variable "role_ids" {
+  description = "Map of role logical names to Spacelift Role IDs. Used to consume output from dependent Spacelift stack"
+  type        = map(string)
+}
+
+locals {
+  nonprod_reader_role     = var.role_ids["nonprod_reader"]
+  prod_reader_role        = var.role_ids["prod_reader"]
+  nonprod_maintainer_role = var.role_ids["nonprod_maintainer"]
+  prod_maintainer_role    = var.role_ids["prod_maintainer"]
+}
+
 module "team_space" {
   source = "./modules/spacelift-spaces"
 
-  team_name        = "platform"
-  team_description = "Platform Engineering Team space"
+  team_name        = "CCOE"
+  team_description = "Cloud Center of Excellence Team space"
   
-  team_role_mappings = [
-    {
-      okta_group_name = "okta-platform-admins"
-      role_name       = "maintainer" # Attaches non-prod role by default at the team tier
-    }
+  okta_groups = [
+    "Spacelift_K8s_CCOE_M_P",
+    "Spacelift_K8s_CCOE_M_T",
+    "Spacelift_K8s_CCOE_RO_P",
+    "Spacelift_K8s_CCOE_RO_T"
   ]
 
-  role_ids = {
-    nonprod_reader     = "rol_reader_nonprod_1234"
-    prod_reader        = "rol_reader_prod_1234"
-    nonprod_maintainer = "rol_maintainer_nonprod_5678"
-    prod_maintainer    = "rol_maintainer_prod_5678"
-  }
+  nonprod_reader_role     = local.nonprod_reader_role
+  prod_reader_role        = local.prod_reader_role
+  nonprod_maintainer_role = local.nonprod_maintainer_role
+  prod_maintainer_role    = local.prod_maintainer_role
 
   apps = {
-    "kubernetes" = {
+    "K8s" = {
       description = "K8s App Space"
       
       environments = {
-        "dev" = {
-          description = "K8s Dev Environment Space"
-          role_mappings = [
-            {
-              okta_group_name = "okta-platform-devs"
-              role_name       = "maintainer" # Attaches `nonprod_maintainer`
-            }
-          ]
+        "test" = {
+          description = "K8s Test Environment Space"
         }
         "prod" = {
           description = "K8s Prod Environment Space"
-          role_mappings = [
-            {
-              okta_group_name = "okta-platform-devs"
-              role_name       = "reader" # Developers get the `prod_reader` permissions
-            },
-            {
-              okta_group_name = "okta-platform-admins"
-              role_name       = "maintainer" # Admins get the `prod_maintainer` permissions
-            }
-          ]
         }
       }
     }
