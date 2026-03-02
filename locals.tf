@@ -50,7 +50,7 @@ locals {
       is_prod         = metadata.parsed[3] == "P"
       space_type      = "env" # Always assigns to the specific environment space based on naming convention
     }
-    if contains(keys(local.environments), "${metadata.parsed[0]}-${metadata.parsed[3] == "P" ? "prod" : "nonprod"}")
+    if contains([for k in keys(local.environments) : lower(k)], lower("${metadata.parsed[0]}-${metadata.parsed[3] == "P" ? "prod" : "nonprod"}"))
   ]
 
   prod_roles = {
@@ -62,4 +62,7 @@ locals {
     "reader"     = var.nonprod_reader_role
     "maintainer" = var.nonprod_maintainer_role
   }
+
+  # Build a lookup map for case-insensitive space key resolution
+  env_key_lookup = { for k in keys(local.environments) : lower(k) => k }
 }

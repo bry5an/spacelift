@@ -40,7 +40,7 @@ resource "spacelift_idp_group_mapping" "mapping" {
 resource "spacelift_role_attachment" "role_assignment" {
   for_each = { for mapping in local.all_role_mappings : mapping.key => mapping }
 
-  space_id             = each.value.space_type == "team" ? spacelift_space.team.id : (each.value.space_type == "app" ? spacelift_space.app[each.value.space_key].id : spacelift_space.environment[each.value.space_key].id)
+  space_id             = each.value.space_type == "team" ? spacelift_space.team.id : (each.value.space_type == "app" ? spacelift_space.app[each.value.space_key].id : spacelift_space.environment[local.env_key_lookup[lower(each.value.space_key)]].id)
   idp_group_mapping_id = spacelift_idp_group_mapping.mapping[each.value.okta_group_name].id
   role_id              = each.value.is_prod ? local.prod_roles[each.value.role_name] : local.nonprod_roles[each.value.role_name]
 }
