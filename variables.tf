@@ -18,17 +18,15 @@ variable "okta_groups" {
 variable "apps" {
   description = "A structured map defining the hierarchy of applications and environments for the team."
   type = map(object({
-    description = optional(string, "Managed by Terraform")
-    environments = optional(map(object({
-      description = optional(string)
-    })), {})
+    description  = optional(string, "Managed by Terraform")
+    environments = optional(map(bool), {})
   }))
   default = {}
 
   validation {
     condition = alltrue(flatten([
       for app_name, app_config in var.apps : [
-        for env_name, env_config in coalesce(app_config.environments, {}) : contains(["nonprod", "prod"], env_name)
+        for env_name, is_enabled in coalesce(app_config.environments, {}) : contains(["nonprod", "prod"], env_name)
       ]
     ]))
     error_message = "Environment names must be either 'nonprod' or 'prod'."

@@ -14,12 +14,12 @@ locals {
   # Flatten Environments
   environments = merge([
     for app_name, app_config in var.apps : {
-      for env_name, env_config in coalesce(app_config.environments, {}) : "${app_name}-${env_name}" => {
+      for env_name, is_enabled in coalesce(app_config.environments, {}) : "${app_name}-${env_name}" => {
         app_name    = app_name
         name        = env_name
-        description = coalesce(env_config.description, "${var.team_name} ${app_name} ${env_name} space")
+        description = "${var.team_name} ${app_name} ${env_name} space"
         is_prod     = env_name == "prod"
-      }
+      } if is_enabled
     }
   ]...)
 

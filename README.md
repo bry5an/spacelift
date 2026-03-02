@@ -50,8 +50,8 @@ module "team_space" {
       description = "K8s App Space"
       
       environments = {
-        "nonprod" = {}
-        "prod"    = {}
+        "nonprod" = true
+        "prod"    = true
       }
     }
   }
