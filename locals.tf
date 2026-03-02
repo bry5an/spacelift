@@ -31,12 +31,12 @@ locals {
   all_okta_groups = var.okta_groups
 
   # Parse Okta groups
-  # Expected format: Spacelift_<app>_<team>_<permission_level>_<env>
-  # Examples: Spacelift_K8s_CCOE_M_P, Spacelift_K8s_CCOE_RO_T
+  # Expected format: SLPOC_<app>_<team>_<permission_level>_<env>
+  # Examples: SLPOC_K8s_CCOE_M_P, SLPOC_K8s_CCOE_RO_T
   parsed_groups = [
     for group in var.okta_groups : {
       group  = group
-      parsed = regex("(?i)^Spacelift_([^_]+)_([^_]+)_(RO|M)_(P|T)$", group)
+      parsed = regex("(?i)^SLPOC_([^_]+)_([^_]+)_(RO|M)_(P|T)$", group)
     }
   ]
 
@@ -50,6 +50,7 @@ locals {
       is_prod         = metadata.parsed[3] == "P"
       space_type      = "env" # Always assigns to the specific environment space based on naming convention
     }
+    if contains(keys(local.environments), "${metadata.parsed[0]}-${metadata.parsed[3] == "P" ? "prod" : "nonprod"}")
   ]
 
   prod_roles = {

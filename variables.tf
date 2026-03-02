@@ -10,7 +10,7 @@ variable "team_description" {
 }
 
 variable "okta_groups" {
-  description = "List of Okta groups following the standard naming convention: Spacelift_<app>_<team>_<permission_level>_<env>"
+  description = "List of Okta groups following the standard naming convention: SLPOC_<app>_<team>_<permission_level>_<env>"
   type        = list(string)
   default     = []
 }
