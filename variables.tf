@@ -20,7 +20,7 @@ variable "apps" {
   type = map(object({
     description = optional(string, "Managed by Terraform")
     environments = optional(map(object({
-      description = optional(string, "Managed by Terraform")
+      description = optional(string)
     })), {})
   }))
   default = {}
@@ -28,10 +28,10 @@ variable "apps" {
   validation {
     condition = alltrue(flatten([
       for app_name, app_config in var.apps : [
-        for env_name, env_config in coalesce(app_config.environments, {}) : contains(["dev", "test", "prod"], env_name)
+        for env_name, env_config in coalesce(app_config.environments, {}) : contains(["nonprod", "prod"], env_name)
       ]
     ]))
-    error_message = "Environment names must be either 'dev', 'test', or 'prod'."
+    error_message = "Environment names must be either 'nonprod' or 'prod'."
   }
 }
 

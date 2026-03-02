@@ -10,7 +10,7 @@ Suppose you have:
 
 You can declare a single `apps` map for a single team describing your organizational layout. This module unfolds the nested dictionary into `spacelift_space`, `spacelift_idp_group_mapping`, and recursive `spacelift_role_attachment` resources. By providing `okta_groups` in the standard nomenclature (`Spacelift_<app>_<team>_<permission_level>_<env>`), this module extracts the target space, role permissions, and environments recursively without requiring inline verbose bindings.
 
-Environment names are restricted to `dev`, `test`, or `prod`. Note that `T` resolves to `test` if it exists, otherwise defaulting to `dev`.
+Environment names are restricted to `nonprod` or `prod`. Note that `T` and all other non-`P` values naturally resolve to `nonprod`.
 
 ## Example Usage
 
@@ -50,12 +50,8 @@ module "team_space" {
       description = "K8s App Space"
       
       environments = {
-        "test" = {
-          description = "K8s Test Environment Space"
-        }
-        "prod" = {
-          description = "K8s Prod Environment Space"
-        }
+        "nonprod" = {}
+        "prod"    = {}
       }
     }
   }

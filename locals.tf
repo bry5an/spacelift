@@ -17,7 +17,7 @@ locals {
       for env_name, env_config in coalesce(app_config.environments, {}) : "${app_name}-${env_name}" => {
         app_name    = app_name
         name        = env_name
-        description = env_config.description
+        description = coalesce(env_config.description, "${var.team_name} ${app_name} ${env_name} space")
         is_prod     = env_name == "prod"
       }
     }
@@ -44,7 +44,7 @@ locals {
   all_role_mappings = [
     for metadata in local.parsed_groups : {
       key             = "mapping-${metadata.group}"
-      space_key       = "${metadata.parsed[0]}-${metadata.parsed[3] == "P" ? "prod" : (metadata.parsed[3] == "T" ? "test" : "dev")}" # app_name - env_name
+      space_key       = "${metadata.parsed[0]}-${metadata.parsed[3] == "P" ? "prod" : "nonprod"}" # <app>-<env> mapping format
       okta_group_name = metadata.group
       role_name       = metadata.parsed[2] == "M" ? "maintainer" : "reader"
       is_prod         = metadata.parsed[3] == "P"
