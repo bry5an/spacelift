@@ -66,3 +66,16 @@ locals {
   # Build a lookup map for case-insensitive space key resolution
   env_key_lookup = { for k in keys(local.environments) : lower(k) => k }
 }
+
+# Build a map of group -> list of policy blocks
+locals {
+  idp_group_policies = {
+    for group in toset(local.all_okta_groups) : group => [
+      for mapping in local.all_role_mappings : {
+        space_id = spacelift_space.environment[local.env_key_lookup[lower(mapping.space_key)]].id
+        role_id  = mapping.is_prod ? local.prod_roles[mapping.role_name] : local.nonprod_roles[mapping.role_name]
+      }
+      if mapping.okta_group_name == group
+    ]
+  }
+}
