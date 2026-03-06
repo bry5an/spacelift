@@ -28,15 +28,19 @@ resource "spacelift_space" "environment" {
 # ------------------------------------------------------------------------------
 
 resource "spacelift_idp_group_mapping" "mapping" {
-  for_each = local.idp_group_policies
+  for_each = toset(local.all_okta_groups)
 
-  name = each.key
+  name = each.value
+}
 
-  dynamic "policy" {
-    for_each = each.value
-    content {
-      space_id = policy.value.space_id
-      role     = policy.value.role_id
-    }
-  }
+# ------------------------------------------------------------------------------
+# Create Role Attachments
+# ------------------------------------------------------------------------------
+
+resource "spacelift_role_attachment" "role_assignment" {
+  for_each = { for mapping in local.all_role_mappings : mapping.key => mapping }
+
+  space_id             = each.value.space_type == "team" ? spacelift_space.team.id : (each.value.space_type == "app" ? spacelift_space.app[each.value.space_key].id : spacelift_space.environment[local.env_key_lookup[lower(each.value.space_key)]].id)
+  idp_group_mapping_id = spacelift_idp_group_mapping.mapping[each.value.okta_group_name].id
+  role_id              = each.value.is_prod ? local.prod_roles[each.value.role_name] : local.nonprod_roles[each.value.role_name]
 }

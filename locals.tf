@@ -36,22 +36,24 @@ locals {
   parsed_groups = [
     for group in var.okta_groups : {
       group  = group
-      parsed = regex("(?i)^SLPOC_([^_]+)_([^_]+)_(RO|M)_(P|T)$", group)
+      parsed = regex("(?i)^SLPOC_([^_]+)_(RO|M)_(P|T)$", group)
     }
   ]
 
   # Process parsed groups into role mapping objects
-  all_role_mappings = [
-    for metadata in local.parsed_groups : {
-      key             = "mapping-${metadata.group}"
-      space_key       = "${metadata.parsed[0]}-${metadata.parsed[3] == "P" ? "prod" : "nonprod"}" # <app>-<env> mapping format
-      okta_group_name = metadata.group
-      role_name       = metadata.parsed[2] == "M" ? "maintainer" : "reader"
-      is_prod         = metadata.parsed[3] == "P"
-      space_type      = "env" # Always assigns to the specific environment space based on naming convention
-    }
-    if contains([for k in keys(local.environments) : lower(k)], lower("${metadata.parsed[0]}-${metadata.parsed[3] == "P" ? "prod" : "nonprod"}"))
-  ]
+  all_role_mappings = flatten([
+    for metadata in local.parsed_groups : [
+      for env_key, env in local.environments : {
+        key             = "mapping-${metadata.group}-${env_key}"
+        space_key       = env_key
+        okta_group_name = metadata.group
+        role_name       = metadata.parsed[1] == "M" ? "maintainer" : "reader"
+        is_prod         = metadata.parsed[2] == "P"
+        space_type      = "env"
+      }
+      if env.is_prod == (metadata.parsed[2] == "P")
+    ]
+  ])
 
   prod_roles = {
     "reader"     = var.prod_reader_role
@@ -65,17 +67,4 @@ locals {
 
   # Build a lookup map for case-insensitive space key resolution
   env_key_lookup = { for k in keys(local.environments) : lower(k) => k }
-}
-
-# Build a map of group -> list of policy blocks
-locals {
-  idp_group_policies = {
-    for group in toset(local.all_okta_groups) : group => [
-      for mapping in local.all_role_mappings : {
-        space_id = spacelift_space.environment[local.env_key_lookup[lower(mapping.space_key)]].id
-        role_id  = mapping.is_prod ? local.prod_roles[mapping.role_name] : local.nonprod_roles[mapping.role_name]
-      }
-      if mapping.okta_group_name == group
-    ]
-  }
 }
